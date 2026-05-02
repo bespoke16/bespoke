@@ -598,32 +598,45 @@
     </div>
     <div class="contact-right">
       <h3>Send Us a Message</h3>
-      <div class="f-row">
-        <div class="f-group"><label>Full Name</label><input type="text" placeholder="Your name"/></div>
-        <div class="f-group"><label>Company</label><input type="text" placeholder="Company name"/></div>
+      <div id="form-success" style="display:none; background:var(--blush-pale); border:1px solid var(--blush-deep); border-radius:12px; padding:2rem; text-align:center;">
+        <i class="fas fa-circle-check" style="font-size:2.5rem; color:var(--blush-deep); margin-bottom:1rem; display:block;"></i>
+        <h4 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; color:var(--text); margin-bottom:0.5rem;">Message Sent!</h4>
+        <p style="color:var(--text-muted); font-size:0.88rem;">Thank you for reaching out. Our team will get back to you within 24 hours.</p>
       </div>
-      <div class="f-row">
-        <div class="f-group"><label>Email</label><input type="email" placeholder="you@company.com"/></div>
-        <div class="f-group"><label>Phone</label><input type="tel" placeholder="+91 XXXXX XXXXX"/></div>
+      <div id="form-error" style="display:none; background:#fff0f0; border:1px solid #e88; border-radius:12px; padding:1rem 1.5rem; margin-bottom:1rem;">
+        <p style="color:#c00; font-size:0.85rem;"><i class="fas fa-triangle-exclamation"></i> Something went wrong. Please try again or WhatsApp us directly.</p>
       </div>
-      <div class="f-group">
-        <label>Service Required</label>
-        <select>
-          <option value="">Select a service…</option>
-          <option>Housekeeping</option>
-          <option>Pantry &amp; Café Management</option>
-          <option>Office Management</option>
-          <option>Corporate Catering</option>
-          <option>Client Visit Management</option>
-          <option>Specialized Cleaning</option>
-          <option>Multiple / Integrated Services</option>
-        </select>
+      <div id="contact-form">
+        <input type="hidden" name="access_key" value="a02e7d80-11ca-4219-9381-a8bc9cde29c0"/>
+        <input type="hidden" name="subject" value="New Enquiry — Bespoke Facility Management"/>
+        <input type="hidden" name="from_name" value="Bespoke Website"/>
+        <div class="f-row">
+          <div class="f-group"><label>Full Name</label><input type="text" id="f-name" placeholder="Your name"/></div>
+          <div class="f-group"><label>Company</label><input type="text" id="f-company" placeholder="Company name"/></div>
+        </div>
+        <div class="f-row">
+          <div class="f-group"><label>Email</label><input type="email" id="f-email" placeholder="you@company.com"/></div>
+          <div class="f-group"><label>Phone</label><input type="tel" id="f-phone" placeholder="+91 XXXXX XXXXX"/></div>
+        </div>
+        <div class="f-group">
+          <label>Service Required</label>
+          <select id="f-service">
+            <option value="">Select a service…</option>
+            <option>Housekeeping</option>
+            <option>Pantry &amp; Café Management</option>
+            <option>Office Management</option>
+            <option>Corporate Catering</option>
+            <option>Client Visit Management</option>
+            <option>Specialized Cleaning</option>
+            <option>Multiple / Integrated Services</option>
+          </select>
+        </div>
+        <div class="f-group">
+          <label>Message</label>
+          <textarea id="f-message" placeholder="Tell us about your facility and requirements…"></textarea>
+        </div>
+        <button class="f-submit" id="f-btn" onclick="submitForm()">Send Message <i class="fas fa-paper-plane"></i></button>
       </div>
-      <div class="f-group">
-        <label>Message</label>
-        <textarea placeholder="Tell us about your facility and requirements…"></textarea>
-      </div>
-      <button class="f-submit" onclick="submitForm()">Send Message <i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
 </section>
@@ -741,7 +754,57 @@
     }, cardIdx * 400);
   });
 
-  function submitForm(){ alert('Thank you for reaching out! Our team will contact you within 24 hours.'); }
+  async function submitForm(){
+    const btn = document.getElementById('f-btn');
+    const name    = document.getElementById('f-name').value.trim();
+    const email   = document.getElementById('f-email').value.trim();
+    const company = document.getElementById('f-company').value.trim();
+    const phone   = document.getElementById('f-phone').value.trim();
+    const service = document.getElementById('f-service').value;
+    const message = document.getElementById('f-message').value.trim();
+
+    // Basic validation
+    if(!name || !email || !phone){
+      document.getElementById('form-error').style.display = 'block';
+      document.getElementById('form-error').querySelector('p').innerHTML =
+        '<i class="fas fa-triangle-exclamation"></i> Please fill in your Name, Email and Phone before submitting.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = 'Sending… <i class="fas fa-spinner fa-spin"></i>';
+    document.getElementById('form-error').style.display = 'none';
+
+    const payload = {
+      access_key: 'a02e7d80-11ca-4219-9381-a8bc9cde29c0',
+      subject: 'New Enquiry — Bespoke Facility Management',
+      from_name: 'Bespoke Website',
+      name, email, phone, company,
+      service: service || 'Not specified',
+      message: message || 'No message provided'
+    };
+
+    try {
+      const res  = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(data.success){
+        document.getElementById('contact-form').style.display = 'none';
+        document.getElementById('form-success').style.display = 'block';
+      } else {
+        throw new Error('Submission failed');
+      }
+    } catch(e){
+      document.getElementById('form-error').style.display = 'block';
+      document.getElementById('form-error').querySelector('p').innerHTML =
+        '<i class="fas fa-triangle-exclamation"></i> Something went wrong. Please try again or <a href="https://wa.me/918237437133" style="color:#c00;">WhatsApp us directly</a>.';
+      btn.disabled = false;
+      btn.innerHTML = 'Send Message <i class="fas fa-paper-plane"></i>';
+    }
+  }
 </script>
 </body>
 </html>
